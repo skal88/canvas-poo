@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf8">
+	<title></title>
+</head>
+<body>
+
+	<canvas id="myCanvas"></canvas>
+	<input type="button" id="myButton" value="Click">
+	<input type="button" id="myButton2" value="reescalar">
+
+	<ul id="elementos">
+
+	</ul>
+
+	<div id="drop_zone" style="padding: 10px; background-color: #555; border-radius: 8px;">
+		<div style="padding: 80px 20px; border: dotted 3px white; border-radius: 8px"><p style="font-size: 32px;">Arrastra aquí la Imagen</p><p>O</p><div style="display: inline-block"><input type="file" id="files" name="files[]" accept="image/*" /></div></div>
+	</div>
+
+	<script type="text/javascript">
+	
+	var canvas = {
+	 	width: null,
+	 	height: null,
+	 	backgroundColor: "white",
+	 	element: null,
+	 	context: null,
+	 	images: [],
+
+	 	setAll: function(){  // Pintamos todo
+	 		this.setBackground();
+	 		this.setImages();
+	 	},
+
+	 	setCanvas: function(element, width, height){  // Configuramos el Canvas
+	 		this.width = width;
+	 		this.height = height;
+	 		this.element = document.getElementById(element);
+	 		this.context = this.element.getContext("2d");
+	 		// Modificamod tamaño canvas
+	 		this.element.width = this.width;
+	 		this.element.height = this.height;
+	 	},
+
+	 	setBackground: function(color){  // Creamos el Background
+	 		if(typeof(color) !== "undefined")
+	 			this.backgroundColor = color;
+	 		this.context.save();
+	 		this.context.fillStyle = this.backgroundColor;
+	 		this.context.fillRect(0,0,this.width,this.height);
+	 		this.context.restore();
+	 	},
+
+	 	newImage: function(image, x, y, w, h){  // Añadimos una Imagen nueva
+	 		var image = new imageC( image, x, y, w, h);
+
+	 		var img = new Image();
+	 		img.src = image.file;
+
+	 		var _this = this;
+	 		img.onload = function(){
+	 			image.image = img;
+	 			_this.images.push(image);
+	 			_this.setAll();
+	 		}
+	 	},
+
+	 	setImage: function(img, x, y, w, h){
+				this.context.save();
+				this.context.drawImage( img, x, y, w, h); // Pintamos teniendo en cuenta los tamaños finales
+				this.context.restore();
+	 	},
+
+	 	setImages: function(){  // Recorremos el Array con las imagenes
+	 		var images = this.images;
+	 		console.log(images.length);
+	 		for(var i=0; i<images.length; i++){
+	 			var image = images[i];
+	 			this.setImage(image.image, image.x, image.y, image.w, image.h);
+	 		}
+	 	},
+
+	 	getImageById: function(id){
+	 		return this.images[id];
+	 	}
+	}
+
+
+
+
+
+
+
+	// OOBJETO IMAGEN
+	var imageC = function(file, x, y, w, h){
+		return {
+			file: file,
+	 		image: null,
+	 		x: x,
+	 		y: y,
+	 		w: w,
+	 		h: h,
+	 		velocity: 1,
+	 		direction : null,
+	 		move: function(){
+	 			switch(this.direction){
+	 				case 'left':
+	 					this.x -= this.velocity;
+	 					break;
+	 				case 'right':
+	 					this.x += this.velocity;
+	 					break;
+	 				case 'up':
+	 					this.y -= this.velocity;
+	 					break;
+	 				case 'down':
+	 					this.y += this.velocity;
+	 					break;
+	 				default:
+	 					console.log("parado");
+	 			}
+	 		}
+	 	}
+	}
+
+
+
+
+	function handleFileSelect(evt) {
+	    evt.stopPropagation();
+	    evt.preventDefault();
+	    
+	    // Comprobamos si existe el evento 'dataTransfer'
+	    if( typeof(evt.dataTransfer) !== "undefined" ) // Si existe buscamos el archivo mediante avt.dataTransfer.file (significa que viene del drag'n'drop)
+	    	var files = evt.dataTransfer.files; // FileList object
+	    else // Si no existe lo buscamos normal desde el campo examinar (form)
+	    	var files = evt.target.files;
+
+	    // Comprovamos si son varios archivos
+	    if(files.length == 1){ // Solo un archivo
+	    	var file = files[0]; // Cogemos el primer elemento del array ( solo se permite un archivo )
+
+	    } else{ // Más de un archivo
+	    	alert("No puedes añadir más de un archivo. De momento... ;)")
+	    	return; // Por el momento no aceptamos más de un archivo
+	    }
+
+	    fileName = escape(file.name); // Guardamos el nombre en la variable global fileName
+	    fileName = fileName.substr(0, fileName.lastIndexOf(".")); // Elimina la extensión del nombre del archivo
+
+	    if (file.type.match('image.*')) { // Comprobamos que es un archivo de imagen
+			var reader = new FileReader(); // Abrimos el archivo
+			// Cogemos la información del archivo cuando carga.
+			reader.onload = (function(theFile) {
+				return function(e) {
+					Sfile = e.target.result; // Guardamos el fichero en la variable global Sfile
+					canvas.newImage(Sfile, 0, 0, 10, 10);  // Preparamos el canvasPre y pintamos la imagen
+					canvas.setAll();
+				};
+			})(file);
+
+			// Read in the image file as a data URL.
+			reader.readAsDataURL(file);
+		} else{ // Si el archivo no es una imagen
+			alert("formato de archivo no válido. Solo imagenes plis! :)");
+		}
+	}
+
+
+
+
+
+
+
+
+
+	// SET
+
+	canvas.setCanvas("myCanvas", 775, 350);
+
+	canvas.newImage("logo.png", 0, 0, 30, 30);
+	canvas.newImage("logo2.png", 30, 30, 30, 30);
+
+
+
+
+
+
+
+	// DRAG'N'DROP Listeners
+	var dropZone = document.getElementById('drop_zone');
+	//dropZone.addEventListener('dragover', handleDragOver, false); // Al pasar por encima con un archivo
+	dropZone.addEventListener('drop', handleFileSelect, false); // Al soltar el archivo en la zona
+	//dropZone.addEventListener('dragleave', handleDragLeave, false); // Al salir de la zona Drag'n'Drop
+	// Al cambiar de archivo en el campo examinar del formulario
+	document.getElementById('files').addEventListener('change', handleFileSelect, false);
+
+
+
+	document.getElementById("myButton").addEventListener('click', function(){
+	 	var image = canvas.getImageById(1);
+	 	image.move();
+	 	canvas.setBackground("red");
+		canvas.setAll();
+	}, false);
+
+	document.getElementById("myButton2").addEventListener('click', function(){
+		// canvas.setCanvas("myCanvas", 200, 200);
+		canvas.images[1].direction = "right";
+	}, false);
+
+
+	document.addEventListener("DOMContentLoaded", function(event) { 
+		
+	});
+
+	 
+
+
+	</script>
+</body>
+</html>
